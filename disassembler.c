@@ -267,8 +267,6 @@ int Disassemble8080Op(unsigned char *codebuffer, int pc)
     case 0x3f:
         printf("CMC");
         break;
-        /* ........ */
-
     case 0x40:
         printf("MOV    B,B");
         break;
