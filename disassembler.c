@@ -564,101 +564,101 @@ int Disassemble8080Op(unsigned char *codebuffer, int pc)
     case 0xc5: 
         printf("PUSH   B"); 
         break;
-	case 0xc6: 
+    case 0xc6: 
         printf("ADI    #$%02x",code[1]); 
         opbytes = 2; 
         break;
-	case 0xc7: 
+    case 0xc7: 
         printf("RST    0"); 
         break;
-	case 0xc8: 
+    case 0xc8: 
         printf("RZ"); 
         break;
-	case 0xc9: 
+    case 0xc9: 
         printf("RET"); 
         break;
-	case 0xca: 
+    case 0xca: 
         printf("JZ     $%02x%02x",code[2],code[1]); 
         opbytes = 3; 
         break;
-	case 0xcb: 
+    case 0xcb: 
         printf("JMP    $%02x%02x",code[2],code[1]); 
         opbytes = 3; 
         break;
-	case 0xcc: printf("CZ     $%02x%02x",code[2],code[1]); 
+    case 0xcc: printf("CZ     $%02x%02x",code[2],code[1]); 
         opbytes = 3; 
         break;
-	case 0xcd: 
+    case 0xcd: 
         printf("CALL   $%02x%02x",code[2],code[1]); 
         opbytes = 3; 
         break;
-	case 0xce: 
+    case 0xce: 
         printf("ACI    #$%02x",code[1]); 
         opbytes = 2; 
         break;
-	case 0xcf: 
+    case 0xcf: 
         printf("RST    1"); 
         break;
-	case 0xd0: 
+    case 0xd0: 
         printf("RNC"); 
         break;
-	case 0xd1: 
+    case 0xd1: 
         printf("POP    D"); 
         break;
-	case 0xd2: 
+    case 0xd2: 
         printf("JNC    $%02x%02x",code[2],code[1]); 
         opbytes = 3; 
         break;
-	case 0xd3: 
+    case 0xd3: 
         printf("OUT    #$%02x",code[1]); 
         opbytes = 2; 
         break;
-	case 0xd4: printf("CNC    $%02x%02x",code[2],code[1]); 
+    case 0xd4: printf("CNC    $%02x%02x",code[2],code[1]); 
         opbytes = 3; 
         break;
-	case 0xd5: 
+    case 0xd5: 
         printf("PUSH   D"); 
         break;
-	case 0xd6: 
+    case 0xd6: 
         printf("SUI    #$%02x",code[1]); 
         opbytes = 2; 
         break;
-	case 0xd7: 
+    case 0xd7: 
         printf("RST    2"); 
         break;
-	case 0xd8: 
+    case 0xd8: 
         printf("RC");  
         break;
-	case 0xd9: 
+    case 0xd9: 
         printf("RET"); 
         break;
-	case 0xda: 
+    case 0xda: 
         printf("JC     $%02x%02x",code[2],code[1]); 
         opbytes = 3; 
         break;
-	case 0xdb: printf("IN     #$%02x",code[1]); 
+    case 0xdb: printf("IN     #$%02x",code[1]); 
         opbytes = 2; 
         break;
-	case 0xdc: printf("CC     $%02x%02x",code[2],code[1]); 
+    case 0xdc: printf("CC     $%02x%02x",code[2],code[1]); 
         opbytes = 3; 
         break;
-	case 0xdd: printf("CALL   $%02x%02x",code[2],code[1]); 
+    case 0xdd: printf("CALL   $%02x%02x",code[2],code[1]); 
         opbytes = 3; 
         break;
-	case 0xde: 
+    case 0xde: 
         printf("SBI    #$%02x",code[1]); 
         opbytes = 2; 
         break;
-	case 0xdf: 
+    case 0xdf: 
         printf("RST    3");
         break;
-	case 0xe0: 
+    case 0xe0: 
         printf("RPO"); 
         break;
-	case 0xe1: 
+    case 0xe1: 
         printf("POP    H"); 
         break;
-	case 0xe2: 
+    case 0xe2: 
         printf("JPO    $%02x%02x",code[2],code[1]); 
         opbytes = 3; 
         break;
