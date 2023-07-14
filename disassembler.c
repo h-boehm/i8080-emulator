@@ -81,7 +81,6 @@ int Disassemble8080Op(unsigned char *codebuffer, int pc)
     case 0x08:
         printf("NOP");
         break;
-    /* ........ */
     case 0x09:
         printf("DAD    B");
         break;
@@ -97,7 +96,6 @@ int Disassemble8080Op(unsigned char *codebuffer, int pc)
     case 0x0d:
         printf("DCR    C");
         break;
-    // not sure about this one - check the answer
     case 0x0e:
         printf("MVI    C,#$%02x", code[1]);
         opbytes = 2;
@@ -163,9 +161,8 @@ int Disassemble8080Op(unsigned char *codebuffer, int pc)
         printf("LXI    H,#$%02x%02x", code[2], code[1]);
         opbytes = 3;
         break;
-    // check this one
     case 0x22:
-        printf("SHLD    %02x%02x", code[2], code[1]);
+        printf("SHLD   $%02x%02x", code[2], code[1]);
         opbytes = 3;
         break;
     case 0x23:
@@ -211,7 +208,6 @@ int Disassemble8080Op(unsigned char *codebuffer, int pc)
     case 0x2f:
         printf("CMA");
         break;
-
     case 0x30:
         printf("NOP");
         break;
@@ -259,7 +255,6 @@ int Disassemble8080Op(unsigned char *codebuffer, int pc)
     case 0x3d:
         printf("DCR    A");
         break;
-    // example
     case 0x3e:
         printf("MVI    A,#0x%02x", code[1]);
         opbytes = 2;
@@ -315,7 +310,6 @@ int Disassemble8080Op(unsigned char *codebuffer, int pc)
     case 0x4f:
         printf("MOV    C,A");
         break;
-
     case 0x50:
         printf("MOV    D,B");
         break;
