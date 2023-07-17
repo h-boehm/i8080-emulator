@@ -27,7 +27,7 @@ int main(int argc, char **argv)
     // 2000 - 23ff  : work RAM
     // 2400 - 3fff  : video RAM
     // 4000 -       : RAM mirror
-    unsigned char *buffer = malloc(fsize);
+    unsigned char *buffer = malloc(8 * 1024 * sizeof(char));
 
     fread(buffer, fsize, 1, f);
     fclose(f);
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
         Emulate8080Op(&cpu_state);
 
         // wait for user to press enter before going to next instruction
-        getchar();
+        // getchar();
     }
     return 0;
 }

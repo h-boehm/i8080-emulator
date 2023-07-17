@@ -44,46 +44,117 @@ int Emulate8080Op(State8080 *state)
     case 0x00:          // NOP
         state->pc += 1; // for the opcode
         break;
-    case 0x01: // LXI    B,word : B <- byte 3, C <- byte 2
+    case 0x01: // LXI    B,word : B <- byte 3, C <- byte 2 (load immediate into register pair BC)
         state->c = opcode[1];
         state->b = opcode[2];
-        state->pc += 2;
+        state->pc += 3;
         break;
-    case 0x02:                                      // STAX B : (BC) <- A (store A in memory location BC)
-        uint16_t offset = state->b << 8 | state->c; // for the memory location of register pair BC
+    case 0x02: // STAX B : (BC) <- A (store A in memory location BC)
+    {
+        uint16_t offset = (uint16_t)state->b << 8 | (uint16_t)state->c; // for the memory location of register pair BC
         state->memory[offset] = state->a;
+        state->pc += 1;
         break;
+    }
+
     case 0x03: // INX B : BC <- BC+1 (increment register pair) B. no condition flags affected
-        uint16_t value = state->b << 8 | state->c;
+    {
+        uint16_t value = (uint16_t)state->b << 8 | (uint16_t)state->c;
         value += 1;
         state->b = (value & 0xff00) >> 8; // store the higher 8 bits in b
         state->c = value & 0xff;          // store the lower 8 bits in c
+        state->pc += 1;
         break;
-    case 0x04: // INR B : B <- B+1 - condition flags will be changed, see the add example
-        UnimplementedInstruction(state);
-        break;
-    case 0x05: // DCR B : B <- B-1
-        UnimplementedInstruction(state);
-        break;
+    }
 
-    case 0x06: // MVI B,D8 : B <- byte 2
+    case 0x04: // INR B : B <- B+1 (increment B) - all condition flags will change execpt CY. see ADD example
+    {
+        uint16_t answer = (uint16_t)state->b + 1;
+
+        // if the result is zero, set the zero flag to zero
+        // else clear the flag
+        if ((answer & 0xff) == 0)
+        {
+            state->cc.z = 1;
+        }
+        else
+        {
+            state->cc.z = 0;
+        }
+
+        // if bit 7 is set, set the sign flag
+        // else clear the sign flag
+        if (answer & 0x80)
+        {
+            state->cc.s = 1;
+        }
+        else
+        {
+            state->cc.s = 0;
+        }
+
+        // parity - used a subroutine which is not created yet?
+        state->cc.p = Parity(answer & 0xff);
+        // set A
+        state->b = answer & 0xff;
+        state->pc += 1;
+        break;
+    }
+
+    case 0x05: // DCR B : B <- B-1 (decrement B) - all condition flags affected except CY
+        // condensed version
+        {
+            uint16_t answer = (uint16_t)state->b - 1;
+            state->cc.z = ((answer & 0xff) == 0);
+            state->cc.s = ((answer & 0x80) != 0);
+            state->cc.p = Parity(answer & 0xff);
+            state->b = answer & 0xff;
+            state->pc += 1;
+            break;
+        }
+
+    case 0x06: // MVI B,D8 : B <- byte 2 (move immediate into B)
         state->b = opcode[1];
         state->pc += 2;
         break;
 
-    case 0x09: // DAD B : HL = HL + BC
-        UnimplementedInstruction(state);
+    case 0x09: // DAD B : HL = HL + BC (add register pair BC to register pair HL). only the CY flag is affected.
+    {
+        uint16_t value = (uint16_t)state->b << 8 | (uint16_t)state->c;
+        uint16_t hl_value = (uint16_t)state->h << 8 | (uint16_t)state->l;
+        uint16_t answer = value + hl_value;
+
+        // set the carry flag
+        if (answer > 0xff)
+        {
+            state->cc.cy = 1;
+        }
+        else
+        {
+            state->cc.cy = 0;
+        }
+        state->pc += 1;
         break;
+    }
 
     case 0x0d: // DCR C : C <-C-1
-        UnimplementedInstruction(state);
-        break;
+        // condensed version
+        {
+            uint16_t answer = (uint16_t)state->c - 1;
+            state->cc.z = ((answer & 0xff) == 0);
+            state->cc.s = ((answer & 0x80) != 0);
+            state->cc.p = Parity(answer & 0xff);
+            state->b = answer & 0xff;
+            state->pc += 1;
+            break;
+        }
 
     case 0x0e: // MVI C, D8 : C <- byte 2
-        UnimplementedInstruction(state);
+        state->c = opcode[1];
+        state->pc += 2;
         break;
 
-    // rotate instruction example
+    // rotate instruction
     case 0x0f: // RRC : A = A >> 1; bit 7 = prev bit 0; CY = prev bit 0
     {
         uint8_t x = state->a;
@@ -96,51 +167,83 @@ int Emulate8080Op(State8080 *state)
     case 0x11: // LX1 D, D16 : D <- byte 3, E <- byte 2
         state->e = opcode[1];
         state->d = opcode[2];
-        state->pc += 2;
-        break;
+        state->pc += 3;
         break;
 
-    case 0x13: // INX D : DE <- DE + 1
-        UnimplementedInstruction(state);
+    case 0x13: // INX D : DE <- DE + 1 (increment register pair DE). no condition flags are affected
+    {
+        uint16_t value = (uint16_t)state->d << 8 | (uint16_t)state->e;
+        value += 1;
+        state->d = (value & 0xff00) >> 8; // store the higher 8 bits in d
+        state->e = value & 0xff;          // store the lower 8 bits in e
+        state->pc += 1;
         break;
+    }
 
     case 0x19: // DAD D : HL = HL + DE (only affects the carry flag)
-        UnimplementedInstruction(state);
-        break;
+    {
+        uint16_t value = (uint16_t)state->d << 8 | (uint16_t)state->e;
+        uint16_t hl_value = (uint16_t)state->h << 8 | (uint16_t)state->l;
+        uint16_t answer = value + hl_value;
 
-    case 0x1a: // LDAX D : A <- (DE)
-        UnimplementedInstruction(state);
+        // set the carry flag
+        if (answer > 0xff)
+        {
+            state->cc.cy = 1;
+        }
+        else
+        {
+            state->cc.cy = 0;
+        }
+        state->pc += 1;
         break;
+    }
 
-    case 0x1f: // RAR : A = A >> 1; bit 7 = prev bit 7; CY = prev bit 0
+    case 0x1a: // LDAX D : A <- (DE). load content of memory location (DE) into A
+    {
+        uint16_t offset = state->d << 8 | state->e; // for the memory location in register pair DE
+        state->a = state->memory[offset];
+        state->pc += 1;
+        break;
+    }
+
+    case 0x1f: // RAR : A = A >> 1; bit 7 = prev bit 7; CY = prev bit 0 (rotate right through carry)
     {
         uint8_t x = state->a;
         state->a = (state->cc.cy << 7) | (x >> 1);
         state->cc.cy = (1 == (x & 1));
+        state->pc += 1;
     }
     break;
 
     case 0x21: // LXI H, D16 : H <- byte 3, L <- byte 2
         state->h = opcode[2];
         state->l = opcode[1];
-        state->pc += 2;
+        state->pc += 3;
         break;
 
-    case 0x23: // INX H : HL <- HL + 1
-        UnimplementedInstruction(state);
+    case 0x23: // INX H : HL <- HL + 1 (increment register pair HL)
+    {
+        uint16_t value = (uint16_t)state->h << 8 | (uint16_t)state->l;
+        value += 1;
+        state->h = (value & 0xff00) >> 8; // store the higher 8 bits in b
+        state->l = value & 0xff;          // store the lower 8 bits in c
+        state->pc += 1;
         break;
+    }
 
     case 0x26: // MVI H, D8 : H <- byte 2
-        UnimplementedInstruction(state);
+        state->h = opcode[1];
+        state->pc += 2;
         break;
 
     case 0x29: // DAD H : HL = HL + HI
         UnimplementedInstruction(state);
         break;
 
-    case 0x2f: // CMA (not) : A <- !A
+    case 0x2f: // CMA (not) : A <- !A (no condition flags are affected)
         state->a = ~state->a;
-        // CMA does not affect the flags
+        state->pc += 1;
         break;
 
     case 0x31: // LXI SP, D16 : SP.hi <- byte 3, SP.lo <- byte 2
@@ -148,68 +251,108 @@ int Emulate8080Op(State8080 *state)
         state->pc += 3;
         break;
 
-    case 0x32: // STA addr : (adr) <- A
-        UnimplementedInstruction(state);
+    case 0x32: // STA addr : (addr) <- A (store A into memory location addr or bytes 2 and 3)
+    {
+        uint16_t offset = opcode[2] << 8 | opcode[1];
+        state->memory[offset] = state->a;
+        state->pc += 3;
         break;
+    }
 
-    case 0x36: // MVI M, D8 : (HL) <- byte 2
-        UnimplementedInstruction(state);
+    case 0x36: // MVI M, D8 : (HL) <- byte 2 (move byte 2 to the memory location in (HL))
+    {
+        uint16_t offset = (uint16_t)state->h << 8 | (uint16_t)state->l;
+        state->memory[offset] = opcode[1];
+        state->pc += 2;
         break;
+    }
 
-    case 0x3a: // LDA addr : A <- (adr)
-        UnimplementedInstruction(state);
+    case 0x3a: // LDA addr : A <- (adr) (load value stored at addr (bytes 2 and 3) to A)
+    {
+        uint16_t offset = opcode[2] << 8 | opcode[1];
+        state->a = state->memory[offset];
+        state->pc += 3;
         break;
+    }
 
-    case 0x3e: // MVI A, D8 : A <- byte 2
-        UnimplementedInstruction(state);
+    case 0x3e: // MVI A, D8 : A <- byte 2 (move byte 2 into A)
+        state->a = opcode[1];
+        state->pc += 2;
         break;
 
     // fill in here
     case 0x41: // MOV    B,C : B <- C
         state->b = state->c;
+        state->pc += 1;
         break;
     case 0x42: // MOV    B,D : B <- D
         state->b = state->d;
+        state->pc += 1;
         break;
     case 0x43: // MOV    B,E : B <- E
         state->b = state->e;
+        state->pc += 1;
         break;
 
-    case 0x56: // MOV D, M : D <- (HL)
-        UnimplementedInstruction(state);
+    case 0x56: // MOV D, M : D <- (HL) (move data at memory location (HL) to D)
+    {
+        uint16_t offset = (uint16_t)state->h << 8 | (uint16_t)state->l;
+        state->d = state->memory[offset];
+        state->pc += 1;
+        break;
+    }
+
+    case 0x5e: // MOV E, M : E <- (HL) (move data at memory location (HL) to E)
+    {
+        uint16_t offset = (uint16_t)state->h << 8 | (uint16_t)state->l;
+        state->e = state->memory[offset];
+        state->pc += 1;
+        break;
+    }
+
+    case 0x66: // MOV H, M : H <- (HL) (move data at memory location (HL) to H)
+    {
+        uint16_t offset = (uint16_t)state->h << 8 | (uint16_t)state->l;
+        state->h = state->memory[offset];
+        state->pc += 1;
+        break;
+    }
+
+    case 0x6f: // MOV L, A : L <- A (move data in A to L)
+        state->l = state->a;
+        state->pc += 1;
         break;
 
-    case 0x5e: // MOV E, M : E <- (HL)
-        UnimplementedInstruction(state);
+    case 0x77: // MOV M, A : (HL) <- A (move data in A to memory location (HL))
+    {
+        uint16_t offset = (uint16_t)state->h << 8 | (uint16_t)state->l;
+        state->memory[offset] = state->a;
+        state->pc += 1;
         break;
+    }
 
-    case 0x66: // MOV H, M : H <- (HL)
-        UnimplementedInstruction(state);
-        break;
-
-    case 0x6f: // MOV L, A : L <- A
-        UnimplementedInstruction(state);
-        break;
-
-    case 0x77: // MOV M, A : (HL) <- A
-        UnimplementedInstruction(state);
-        break;
-
-    case 0x7a: // MOV A, D : A <- D
-        UnimplementedInstruction(state);
+    case 0x7a: // MOV A, D : A <- D (move data in D to A)
+        state->a = state->d;
+        state->pc += 1;
         break;
 
     case 0x7b: // MOV A, E : A <- E
-        UnimplementedInstruction(state);
+        state->e = state->a;
+        state->pc += 1;
         break;
 
     case 0x7c: // MOV A, H : A <- H
-        UnimplementedInstruction(state);
+        state->a = state->h;
+        state->pc += 1;
         break;
 
-    case 0x7e: // MOV A, M : A <- (HL)
-        UnimplementedInstruction(state);
+    case 0x7e: // MOV A, M : A <- (HL) (move data in memory location (HL) to A)
+    {
+        uint16_t offset = (uint16_t)state->h << 8 | (uint16_t)state->l;
+        state->a = state->memory[offset];
+        state->pc += 1;
         break;
+    }
 
     // arithmetic instruction examples
     // these will change the CPU condition codes (flags)
@@ -254,6 +397,8 @@ int Emulate8080Op(State8080 *state)
         state->cc.p = Parity(answer & 0xff);
         // set A
         state->a = answer & 0xff;
+        // increment pc
+        state->pc += 1;
         break;
     }
     // add register - condensed
@@ -265,10 +410,11 @@ int Emulate8080Op(State8080 *state)
         state->cc.cy = (answer > 0xff);
         state->cc.p = Parity(answer & 0xff);
         state->a = answer & 0xff;
+        state->pc += 1;
     }
     break;
 
-    // memory form example
+    // add - memory example
     case 0x86: // ADD M : A <- A + (HL)
     {
         uint16_t offset = (state->h << 8) | (state->l);
@@ -278,15 +424,18 @@ int Emulate8080Op(State8080 *state)
         state->cc.cy = (answer > 0xff);
         state->cc.p = Parity(answer & 0xff);
         state->a = answer & 0xff;
+        state->pc += 1;
     }
     break;
 
-    case 0xa7: // ANA A : A <- A & A
+    case 0xa7: // ANA A : A <- A & A (affects condition flags)
         state->a = state->a & state->a;
+        state->pc += 1;
         break;
 
-    case 0xaf: // XRA A : A <- A ^ B
+    case 0xaf: // XRA A : A <- A ^ B (affects condition flags)
         state->a = state->a ^ state->b;
+        state->pc += 1;
         break;
 
     // stack group
@@ -295,6 +444,7 @@ int Emulate8080Op(State8080 *state)
         state->c = state->memory[state->sp];
         state->b = state->memory[state->sp + 1];
         state->sp += 2;
+        state->pc += 1;
     }
     break;
 
@@ -324,6 +474,7 @@ int Emulate8080Op(State8080 *state)
         state->memory[state->sp - 1] = state->b;
         state->memory[state->sp - 2] = state->c;
         state->sp = state->sp - 2;
+        state->pc += 1;
     }
     break;
 
@@ -336,6 +487,7 @@ int Emulate8080Op(State8080 *state)
         state->cc.cy = (answer > 0xff);
         state->cc.p = Parity(answer & 0xff);
         state->a = answer & 0xff;
+        state->pc += 2;
     }
     break;
 
@@ -359,11 +511,12 @@ int Emulate8080Op(State8080 *state)
         state->memory[state->sp + 1] = state->d;
         state->memory[state->sp] = state->e;
         state->sp = state->sp + 2;
+        state->pc += 1;
     }
     break;
 
     case 0xd3:          // OUT D8 : used to talk to hardware
-        state->sp += 2; // for now, make this skip over the data byte
+        state->pc += 2; // for now, make this skip over the data byte
         break;
 
     case 0xd5: // PUSH D : (sp-2)<-E; (sp-1)<-D; sp <- sp - 2
@@ -371,6 +524,7 @@ int Emulate8080Op(State8080 *state)
         state->memory[state->sp - 1] = state->d;
         state->memory[state->sp - 2] = state->e;
         state->sp = state->sp - 2;
+        state->pc += 1;
     }
     break;
 
@@ -379,6 +533,7 @@ int Emulate8080Op(State8080 *state)
         state->memory[state->sp + 1] = state->h;
         state->memory[state->sp] = state->l;
         state->sp = state->sp + 2;
+        state->pc += 1;
     }
     break;
 
@@ -387,6 +542,7 @@ int Emulate8080Op(State8080 *state)
         state->memory[state->sp - 1] = state->h;
         state->memory[state->sp - 2] = state->l;
         state->sp = state->sp - 2;
+        state->pc += 1;
     }
     break;
 
@@ -404,6 +560,7 @@ int Emulate8080Op(State8080 *state)
     break;
 
     case 0xeb: // XCHG : H <-> D; L <-> E
+    {
         uint8_t tmp = state->h;
         state->h = state->d;
         state->d = tmp;
@@ -411,7 +568,10 @@ int Emulate8080Op(State8080 *state)
         tmp = state->l;
         state->l = state->e;
         state->e = tmp;
+
+        state->pc += 1;
         break;
+    }
 
     case 0xf1: // POP PSW
     {
@@ -423,6 +583,7 @@ int Emulate8080Op(State8080 *state)
         state->cc.cy = (0x05 == (psw & 0x08));
         state->cc.ac = (0x10 == (psw & 0x10));
         state->sp += 2;
+        state->pc += 1;
     }
     break;
 
@@ -436,6 +597,7 @@ int Emulate8080Op(State8080 *state)
                        state->cc.ac << 4);
         state->memory[state->sp - 2] = psw;
         state->sp = state->sp - 2;
+        state->pc += 1;
     }
     break;
 
