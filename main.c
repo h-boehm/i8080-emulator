@@ -20,6 +20,13 @@ int main(int argc, char **argv)
     int fsize = ftell(f);
     fseek(f, 0L, SEEK_SET);
 
+    // need to allocate some more memory for this?
+    // see http://www.emulator101.com/memory-maps.html
+    // the game has 8K of RAM starting at address 2000.
+    // 0000 to 1fff : ROM
+    // 2000 - 23ff  : work RAM
+    // 2400 - 3fff  : video RAM
+    // 4000 -       : RAM mirror
     unsigned char *buffer = malloc(fsize);
 
     fread(buffer, fsize, 1, f);
