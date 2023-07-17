@@ -19,11 +19,15 @@ void UnimplementedInstruction(State8080 *state)
 
 // determine the parity of a number
 // return 1 if even parity, 0 if odd parity
-// gcc has a built in parity function that gives odd parity,
-// so we should invert the result
 int Parity(unsigned int value)
 {
-    return !__builtin_parity(value);
+    int parity = 0;
+    while (value)
+    {
+        parity = !parity;
+        value = value & (value - 1);
+    }
+    return parity;
 }
 
 // function to emulate 8080 instructions
@@ -137,6 +141,25 @@ int Emulate8080Op(State8080 *state)
         break;
     }
 
+    case 0x0a: // LDAX B : A <- (BC) (load content of memory location (BC) into A)
+    {
+        uint16_t offset = state->b << 8 | state->c; // for the memory location in register pair DE
+        state->a = state->memory[offset];
+        state->pc += 1;
+        break;
+    }
+
+    case 0x0b: // DCX B : BC = BC-1 (decrement BC)
+    {
+        uint16_t value = (uint16_t)state->b << 8 | (uint16_t)state->c;
+        value -= 1;
+        state->b = (value & 0xff00) >> 8; // store the higher 8 bits in b
+        state->c = value & 0xff;          // store the lower 8 bits in c
+        state->pc += 1;
+
+        break;
+    }
+
     case 0x0d: // DCR C : C <-C-1
         // condensed version
         {
@@ -176,6 +199,17 @@ int Emulate8080Op(State8080 *state)
         value += 1;
         state->d = (value & 0xff00) >> 8; // store the higher 8 bits in d
         state->e = value & 0xff;          // store the lower 8 bits in e
+        state->pc += 1;
+        break;
+    }
+
+    case 0x14: // INR D : D <- D+1 (affects condition flags)
+    {
+        uint16_t answer = (uint16_t)state->d - 1;
+        state->cc.z = ((answer & 0xff) == 0);
+        state->cc.s = ((answer & 0x80) != 0);
+        state->cc.p = Parity(answer & 0xff);
+        state->b = answer & 0xff;
         state->pc += 1;
         break;
     }
@@ -237,9 +271,24 @@ int Emulate8080Op(State8080 *state)
         state->pc += 2;
         break;
 
-    case 0x29: // DAD H : HL = HL + HI
-        UnimplementedInstruction(state);
+    case 0x29: // DAD H : HL = HL + HL (affects carry flag)
+    {
+        uint16_t value = (uint16_t)state->h << 8 | (uint16_t)state->l;
+        uint16_t hl_value = (uint16_t)state->h << 8 | (uint16_t)state->l;
+        uint16_t answer = value + hl_value;
+
+        // set the carry flag
+        if (answer > 0xff)
+        {
+            state->cc.cy = 1;
+        }
+        else
+        {
+            state->cc.cy = 0;
+        }
+        state->pc += 1;
         break;
+    }
 
     case 0x2f: // CMA (not) : A <- !A (no condition flags are affected)
         state->a = ~state->a;
@@ -428,13 +477,31 @@ int Emulate8080Op(State8080 *state)
     }
     break;
 
-    case 0xa7: // ANA A : A <- A & A (affects condition flags)
+    case 0xa7: // ANA A : A <- A & A (clear the CY flag but all other flags behave the same)
         state->a = state->a & state->a;
+
+        // set the condition flags
+        state->cc.z = ((state->a & 0xff) == 0);
+        state->cc.s = ((state->a & 0x80) != 0);
+        state->cc.p = Parity(state->a & 0xff);
+
+        // clear the cy flag
+        state->cc.cy = 0;
+
         state->pc += 1;
         break;
 
-    case 0xaf: // XRA A : A <- A ^ B (affects condition flags)
+    case 0xaf: // XRA A : A <- A ^ B (clear the CY and AC flag but all other flags behave the same)
         state->a = state->a ^ state->b;
+
+        // set the condition flags
+        state->cc.z = ((state->a & 0xff) == 0);
+        state->cc.s = ((state->a & 0x80) != 0);
+        state->cc.p = Parity(state->a & 0xff);
+
+        // clear the cy and ac flags
+        state->cc.cy = 0;
+        state->cc.ac = 0;
         state->pc += 1;
         break;
 
@@ -460,7 +527,7 @@ int Emulate8080Op(State8080 *state)
         else
         {
             // branch not taken
-            state->pc += 2;
+            state->pc += 3;
         }
     }
     break;
@@ -603,7 +670,8 @@ int Emulate8080Op(State8080 *state)
 
     case 0xfb: // EI : special - enable interrupt
         // this should set an interrupt_enabled flag in the processor state.
-        UnimplementedInstruction(state);
+        state->int_enable = 1;
+        state->pc += 1;
         break;
 
     // compare example
@@ -623,6 +691,7 @@ int Emulate8080Op(State8080 *state)
         UnimplementedInstruction(state);
         break;
     default:
+        UnimplementedInstruction(state);
         break;
     }
 
@@ -631,9 +700,9 @@ int Emulate8080Op(State8080 *state)
     printf("\tC=%d,P=%d,S=%d,Z=%d\n", state->cc.cy, state->cc.p,
            state->cc.s, state->cc.z);
     // registers
-    printf("\tA $%02x B $%02x C $%02x D $%02x E $%02x H $%02x L $%02x SP %04x\n",
+    printf("\tA $%02x B $%02x C $%02x D $%02x E $%02x H $%02x L $%02x SP %04x PC %04x\n",
            state->a, state->b, state->c, state->d,
-           state->e, state->h, state->l, state->sp);
+           state->e, state->h, state->l, state->sp, state->pc);
 
     return 0;
 }
