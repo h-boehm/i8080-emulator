@@ -1,0 +1,6 @@
+testing
+.vscode
+main.dSYM
+main
+*.txt
+.DS_Store
