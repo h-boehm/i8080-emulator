@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <memory.h>
 
 // 16K buffer (sufficient for Space Invaders)
 #define MEM_SIZE 0x4000
@@ -44,24 +45,24 @@ void mem_write(int address, unsigned char byte)
     }
 }
 
-void mem_init() {
-
+void mem_init() 
+{
     // initialize memory
     // clear memory buffer (set all bytes to 0)
     memset(memory, 0, MEM_SIZE);
 
     // load game files (each one is 2048 (or 0x800) bytes)
     // start from RAM address
-    load_file("../invaders/invaders.e", 0x800);
-    load_file("../invaders/invaders.f", 0x1000);
-    load_file("../invaders/invaders.g", 0x1800);
-    load_file("../invaders/invaders.h", 0x2000);
+    load_file("./invaders/invaders.e", 0x800);
+    load_file("./invaders/invaders.f", 0x1000);
+    load_file("./invaders/invaders.g", 0x1800);
+    load_file("./invaders/invaders.h", 0x2000);
 }
 
-void debug_print() 
+void print_memory() 
 {
     // starting from RAM
-    for (int i = 2000; i < 4000; ++i) {
+    for (int i = 0; i < 16383; ++i) {
         // pad hex values for clearer output
         printf("%02x ", memory[i]);
         // newline every 16 bytes
@@ -69,10 +70,4 @@ void debug_print()
             printf("\n");
         }
     }
-}
-
-int main() {
-
-    mem_init();
-    debug_print();
 }
