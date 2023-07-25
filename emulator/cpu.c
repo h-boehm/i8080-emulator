@@ -33,7 +33,7 @@ int parity(int x, int size) {
 }
 
 // sets flags after logical instruction on A register
-void LogicFlagsA(State8080 *state) {
+void logic_flags_A(State8080 *state) {
 	state->cc.cy = state->cc.ac = 0;
 	state->cc.z = (state->a == 0);
 	state->cc.s = (0x80 == (state->a & 0x80));
@@ -427,7 +427,7 @@ int Emulate8080Op(State8080 *state) {
     break;
     }
     case 0xa7: // ANA A : A <- A & A (clear the CY flag but all other flags behave the same)
-        state->a = state->a & state->a; LogicFlagsA(state);
+        state->a = state->a & state->a; logic_flags_A(state);
         break; 
     case 0xaf: // XRA A : A <- A ^ B (clear the CY and AC flag but all other flags behave the same)
         state->a = state->a ^ state->b;
