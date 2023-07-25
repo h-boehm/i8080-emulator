@@ -583,8 +583,7 @@ int Emulate8080Op(State8080 *state) {
         state->pc += 1;
         break;
     case 0xf3: // DI
-        // implement disable interrupts function
-        printf("implement disable interrupts function");
+        // implement disable interrupts instruction here
         break;
     // compare example
     case 0xfe: // CPI byte : compare immediate with accumulator
