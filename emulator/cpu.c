@@ -55,6 +55,26 @@ void arithmetic_flags_A(State8080 *state, int answer)
     state->cc.p = parity(answer & 0xff, 8);
 }
 
+// function to generate interrupts
+// check the debug section, may need to disable interrupts here?
+void GenerateInterrupt(State8080 *state, int interrupt_num)
+{
+    // perform "PUSH PC" - see the example for what this does.
+    // Push(state, (state->pc & 0xFF00) >> 8, (state->pc & 0xff)); // this function doesn't exist yet.
+    state->memory[state->sp - 1] = (state->pc & 0xFF00);
+    state->memory[state->sp - 2] = (state->pc & 0xff);
+    state->sp = state->sp - 2;
+
+    // Set the PC to the low memory vector.
+    // This is identical to an "RST interrupt_num" instruction.
+    state->pc = 8 * interrupt_num;
+
+    // mimic "DI" - disable interrupt
+    //  see the debugging section. this should prevent a new interrupt from
+    //  generating until EI (enable interrupt) is called.
+    state->int_enable = 0;
+}
+
 // function to emulate 8080 instructions
 int Emulate8080Op(State8080 *state)
 {
@@ -469,9 +489,16 @@ int Emulate8080Op(State8080 *state)
         break;
     }
 
-    case 0x27: // DAA - see website for how to do this
+    case 0x27: // DAA - reference http://www.emulator101.com/cocoa-port-pt-4---keyboard.html
     {
-        unimplemented_instruction(state);
+        if ((state->a & 0xf) > 9)
+            state->a += 6;
+        if ((state->a & 0xf0) > 0x90)
+        {
+            uint16_t res = (uint16_t)state->a + 0x60;
+            state->a = res & 0xff;
+            ArithFlagsA(state, res);
+        }
         break;
     }
 
@@ -1954,7 +1981,13 @@ int Emulate8080Op(State8080 *state)
 
     case 0xc7: // RST 0 : CALL $0
     {
-        unimplemented_instruction(state);
+        // Save the current PC on the stack before jumping
+        uint16_t ret = state->pc + 1;
+        state->memory[state->sp - 1] = (ret >> 8) & 0xff; // high part of PC
+        state->memory[state->sp - 2] = (ret & 0xff);      // low part of PC
+        state->sp = state->sp - 2;
+        // Jump to the address $00
+        state->pc = 0x00;
         break;
     }
 
@@ -2074,9 +2107,15 @@ int Emulate8080Op(State8080 *state)
         break;
     }
 
-    case 0xcf: // RST 1
+    case 0xcf: // RST 1 - CALL $8
     {
-        unimplemented_instruction(state);
+        // Save the current PC on the stack before jumping
+        uint16_t ret = state->pc + 1;
+        state->memory[state->sp - 1] = (ret >> 8) & 0xff; // high part of PC
+        state->memory[state->sp - 2] = (ret & 0xff);      // low part of PC
+        state->sp = state->sp - 2;
+        // Jump to the address $08
+        state->pc = 0x08;
         break;
     }
 
@@ -2173,7 +2212,13 @@ int Emulate8080Op(State8080 *state)
 
     case 0xd7: // RST 2 : CALL $10
     {
-        unimplemented_instruction(state);
+        // Save the current PC on the stack before jumping
+        uint16_t ret = state->pc + 1;
+        state->memory[state->sp - 1] = (ret >> 8) & 0xff; // high part of PC
+        state->memory[state->sp - 2] = (ret & 0xff);      // low part of PC
+        state->sp = state->sp - 2;
+        // Jump to the address $10
+        state->pc = 0x10;
         break;
     }
 
@@ -2263,7 +2308,13 @@ int Emulate8080Op(State8080 *state)
 
     case 0xdf: // RST 3 : CALL $18
     {
-        unimplemented_instruction(state);
+        // Save the current PC on the stack before jumping
+        uint16_t ret = state->pc + 1;
+        state->memory[state->sp - 1] = (ret >> 8) & 0xff; // high part of PC
+        state->memory[state->sp - 2] = (ret & 0xff);      // low part of PC
+        state->sp = state->sp - 2;
+        // Jump to the address $18
+        state->pc = 0x18;
         break;
     }
 
@@ -2371,7 +2422,13 @@ int Emulate8080Op(State8080 *state)
 
     case 0xe7: // RST 4 : CALL $20
     {
-        unimplemented_instruction(state);
+        // Save the current PC on the stack before jumping
+        uint16_t ret = state->pc + 1;
+        state->memory[state->sp - 1] = (ret >> 8) & 0xff; // high part of PC
+        state->memory[state->sp - 2] = (ret & 0xff);      // low part of PC
+        state->sp = state->sp - 2;
+        // Jump to the address $00
+        state->pc = 0x20;
         break;
     }
 
@@ -2465,7 +2522,13 @@ int Emulate8080Op(State8080 *state)
 
     case 0xef: // RST 5 : CALL $28
     {
-        unimplemented_instruction(state);
+        // Save the current PC on the stack before jumping
+        uint16_t ret = state->pc + 1;
+        state->memory[state->sp - 1] = (ret >> 8) & 0xff; // high part of PC
+        state->memory[state->sp - 2] = (ret & 0xff);      // low part of PC
+        state->sp = state->sp - 2;
+        // Jump to the address $00
+        state->pc = 0x28;
         break;
     }
 
@@ -2513,7 +2576,7 @@ int Emulate8080Op(State8080 *state)
 
     case 0xf3: // DI
         // implement disable interrupts instruction here
-        unimplemented_instruction(state);
+        state->int_enable = 0;
         break;
 
     case 0xf4: // CP adr - call on positive (sign = 0)
@@ -2568,7 +2631,13 @@ int Emulate8080Op(State8080 *state)
 
     case 0xf7: // RST 6 : CALL $30
     {
-        unimplemented_instruction(state);
+        // Save the current PC on the stack before jumping
+        uint16_t ret = state->pc + 1;
+        state->memory[state->sp - 1] = (ret >> 8) & 0xff; // high part of PC
+        state->memory[state->sp - 2] = (ret & 0xff);      // low part of PC
+        state->sp = state->sp - 2;
+        // Jump to the address $30
+        state->pc = 0x30;
         break;
     }
 

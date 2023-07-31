@@ -35,12 +35,23 @@ typedef struct State8080
 } State8080;
 
 // quit the program for every opcode with an error
-void UnimplementedInstruction(State8080 *state);
+void unimplementedInstruction(State8080 *state);
+
+// redirect the output
+void redirect_output(uint8_t byte, uint8_t port);
 
 // emulate the opcode given the current CPU state
 int Emulate8080Op(State8080 *state);
 
+// sets flags after logical instruction on A register
+void logic_flags_A(State8080 *state);
+
+// set flags after arithmetic function on A register.
+void arithmetic_flags_A(State8080 *state, int answer);
+
+void GenerateInterrupt(State8080 *state, int interrupt_num);
+
 // parity function
-int Parity(unsigned int value);
+int parity(int x, int size);
 
 #endif
