@@ -2,11 +2,11 @@
 // we want to load in the cpudiag.bin file instead
 // see http://www.emulator101.com/full-8080-emulation.html for guidance
 
-// to compile:
-// gcc -o tests tests.c ../modules/memory.c ../utils/disasm.c ../emulator/cpu.c -DFOR_CPUDIAG
+// to compile (from the project root)
+// gcc -o tests ./utils/tests.c ./modules/memory.c ./utils/disasm.c ./emulator/cpu.c -DFOR_CPUDIAG
 
 // to run:
-// ./testing/tests
+// ./tests
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,7 +22,7 @@ int main(int argc, char **argv)
 
     // initialize memory buffer and load ROM files into memory
     // mem_init();
-    load_file("./cpudiag.bin", 0x100);
+    load_file("./utils/cpudiag.bin", 0x100);
 
     // some other initialization steps
     // we need the first thing to happen to be jumping to the code at 0x100
