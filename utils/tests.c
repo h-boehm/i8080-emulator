@@ -5,7 +5,7 @@
 // to compile (from the project root)
 // gcc -o tests ./utils/tests.c ./modules/memory.c ./utils/disasm.c ./emulator/cpu.c -DFOR_CPUDIAG
 
-// to run:
+// to run (from the project root):
 // ./tests
 
 #include <stdio.h>
