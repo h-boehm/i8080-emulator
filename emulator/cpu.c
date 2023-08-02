@@ -119,7 +119,10 @@ int Emulate8080Op(State8080 *state)
     case 0x02: // STAX B : (BC) <- A (store A in memory location BC)
     {
         uint16_t offset = (uint16_t)state->b << 8 | (uint16_t)state->c; // for the memory location of register pair BC
-        state->memory[offset] = state->a;
+        if (offset > 0x2000 && offset <= 0x4000)
+        {
+            state->memory[offset] = state->a;
+        }
         state->pc += 1;
         cycles = 7;
         break;
@@ -306,7 +309,11 @@ int Emulate8080Op(State8080 *state)
     case 0x12: // STAX D : (DE) <- A (store A in memory location DE)
     {
         uint16_t offset = (uint16_t)state->d << 8 | (uint16_t)state->e; // for the memory location of register pair DE
-        state->memory[offset] = state->a;
+        if (offset > 0x2000 && offset <= 0x4000)
+        {
+            state->memory[offset] = state->a;
+        }
+
         state->pc += 1;
         cycles = 7;
         break;
@@ -479,8 +486,11 @@ int Emulate8080Op(State8080 *state)
         uint16_t offset = opcode[2] << 8 | opcode[1];
 
         // should protect the memory?
-        state->memory[offset] = state->l;
-        state->memory[offset + 1] = state->h;
+        if (offset > 0x2000 && offset <= 0x4000)
+        {
+            state->memory[offset] = state->l;
+            state->memory[offset + 1] = state->h;
+        }
 
         state->pc += 3;
         cycles = 16;
@@ -1199,7 +1209,11 @@ int Emulate8080Op(State8080 *state)
     case 0x70: // MOV M,B : (HL) <- B (move data at B into memory location HL)
     {
         uint16_t offset = (uint16_t)state->h << 8 | (uint16_t)state->l;
-        state->memory[offset] = state->b;
+
+        if (offset > 0x2000 && offset <= 0x4000)
+        {
+            state->memory[offset] = state->b;
+        }
         state->pc += 1;
         cycles = 7;
         break;
@@ -1208,7 +1222,10 @@ int Emulate8080Op(State8080 *state)
     case 0x71: // MOV M,C : (HL) <- C
     {
         uint16_t offset = (uint16_t)state->h << 8 | (uint16_t)state->l;
-        state->memory[offset] = state->c;
+        if (offset > 0x2000 && offset <= 0x4000)
+        {
+            state->memory[offset] = state->c;
+        }
         state->pc += 1;
         cycles = 7;
         break;
@@ -1217,7 +1234,11 @@ int Emulate8080Op(State8080 *state)
     case 0x72: // MOV M,D : (HL) <- D
     {
         uint16_t offset = (uint16_t)state->h << 8 | (uint16_t)state->l;
-        state->memory[offset] = state->d;
+
+        if (offset > 0x2000 && offset <= 0x4000)
+        {
+            state->memory[offset] = state->d;
+        }
         state->pc += 1;
         cycles = 7;
         break;
@@ -1226,7 +1247,11 @@ int Emulate8080Op(State8080 *state)
     case 0x73: // MOV M,E : (HL) <- E
     {
         uint16_t offset = (uint16_t)state->h << 8 | (uint16_t)state->l;
-        state->memory[offset] = state->e;
+        if (offset > 0x2000 && offset <= 0x4000)
+        {
+            state->memory[offset] = state->e;
+        }
+
         state->pc += 1;
         cycles = 7;
         break;
@@ -1235,7 +1260,10 @@ int Emulate8080Op(State8080 *state)
     case 0x74: // MOV M,H : (HL) <- H
     {
         uint16_t offset = (uint16_t)state->h << 8 | (uint16_t)state->l;
-        state->memory[offset] = state->h;
+        if (offset > 0x2000 && offset <= 0x4000)
+        {
+            state->memory[offset] = state->h;
+        }
         state->pc += 1;
         cycles = 7;
         break;
@@ -1244,7 +1272,10 @@ int Emulate8080Op(State8080 *state)
     case 0x75: // MOV M,L : (HL) <- L
     {
         uint16_t offset = (uint16_t)state->h << 8 | (uint16_t)state->l;
-        state->memory[offset] = state->l;
+        if (offset > 0x2000 && offset <= 0x4000)
+        {
+            state->memory[offset] = state->l;
+        }
         state->pc += 1;
         cycles = 7;
         break;
@@ -1260,6 +1291,7 @@ int Emulate8080Op(State8080 *state)
     case 0x77: // MOV M, A : (HL) <- A (move data in A to memory location (HL))
     {
         uint16_t offset = (uint16_t)state->h << 8 | (uint16_t)state->l;
+        // change this to use a protected write function for any opcode that writes to memory
         if (offset > 0x2000 && offset <= 0x4000)
         {
             state->memory[offset] = state->a;
@@ -1776,6 +1808,10 @@ int Emulate8080Op(State8080 *state)
         uint16_t offset = (uint16_t)state->h << 8 | (uint16_t)state->l;
         state->a = state->a & state->memory[offset];
         state->pc += 1;
+
+        // set logic flags
+        logic_flags_A(state);
+
         cycles = 7;
         break;
     }
