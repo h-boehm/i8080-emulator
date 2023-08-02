@@ -1,17 +1,14 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef MEMORY_H
+#define MEMORY_H
 
-// 16K buffer (sufficient for Space Invaders)
-#define MEM_SIZE 0x4000
+#include "../emulator/emulator.h"
 
-// global memory buffer
-// instructions/operands are unsigned chars
-extern unsigned char memory[MEM_SIZE];
+// 8080 memory is 0 to 0xFFFF (64k bytes)
+#define MEM_SIZE 0x10000
 
-// function declarations
-void load_file(char *file, int address);
-unsigned char mem_read(int address);
-void mem_write(int address, unsigned char byte);
-void mem_init();
+// Function declarations
+int memory_init(State8080 *state);
+void load_invaders();
 void print_memory();
+
+#endif /* MEMORY_H */

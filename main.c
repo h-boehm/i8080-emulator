@@ -1,39 +1,52 @@
+#include <errno.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
+#include <string.h>
 
+#include "emulator/emulator.h"
 #include "modules/memory.h"
-#include "emulator/cpu.h"
-#include "utils/disasm.h"
+#include "modules/interrupts.h"
 
-// main function to read in the file
-int main(int argc, char **argv) {
-    
-    // initialize memory buffer and load ROM files into memory
-    mem_init();
+State8080 *state;
 
-    // can redirect this to file
-    // print_memory();
+int main(int argc, char **argv)
+{
+    int done = 0;
 
-    // set up a State8080 struct
-    State8080 cpu_state;
-    // int pc = 0;
-    //  try setting the initial pc value - should point to the start of the program
+    // initialize state struct
+    state = malloc(sizeof(State8080));
+    if (!state) {
+        fprintf(stderr, "error: could not initialize state object: %s\n", strerror(errno));
+    }
 
-    cpu_state.pc = 0;
-    cpu_state.memory = memory;
-    while (cpu_state.pc < sizeof(memory)) {
-        // pc += Disassemble8080Op(buffer, pc);
-        // cpu_state.pc += Disassemble8080Op(buffer, cpu_state.pc);
+    // initialize memory buffer
+    memory_init(state);
 
-        // for debugging
-        printf("pc: %d\n", cpu_state.pc);
-        printf("instruction: %02X\n", cpu_state.memory[cpu_state.pc]);
+    // load Space Invaders into memory
+    load_invaders(state);
 
-        Emulate8080Op(&cpu_state);
+    // save initial time
+    double lastInterrupt = get_time();
 
-        // wait for user to press enter before going to next instruction
-        // getchar();
+    // run program in a loop
+    while (!done) {
+
+        done = emulate_8080(state);
+
+        // generate interrupt every 1/60 second 
+        // (interrupts execute at 60 Hz)
+        if (get_time() - lastInterrupt > 1.0/60.0) {
+            if (state->int_enable) {
+                generate_interrupt(state, 2);
+                lastInterrupt = get_time();
+            }
+        }
+
+        // debugging
+        printf("pc: %d\n", state->pc);
+        printf("instruction: %02X\n", state->memory[state->pc]);
+        printf("A: 0x%02x, B: 0x%02x, C: 0x%02x, D: 0x%02x, E: 0x%02x, H: 0x%02x, L: 0x%02x\n", state->a, state->b, state->c, state->d, state->e, state->h, state->l);
     }
 
     return 0;
