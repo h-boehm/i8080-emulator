@@ -9,11 +9,15 @@
 
 #include <SDL2/SDL.h>
 
-// compilation
+// compilation (on mac)
 // gcc -o main main.c ./modules/memory.c ./utils/disasm.c ./emulator/cpu.c -I/Library/Frameworks/SDL2.framework/Headers -I./glad/include -F/Library/Frameworks -framework SDL2
 
 // if we want to use SDL2, need to have this in there as well (for mac)
 // -I/Library/Frameworks/SDL2.framework/Headers -I./glad/include -F/Library/Frameworks -framework SDL2
+
+// to debug: add the -g flag
+// run using gdb ./main or lldb ./main on Mac
+// then type run
 
 // create a machine object - see http://www.emulator101.com/cocoa-port-pt-2---machine-object.html
 typedef struct SpaceInvadersMachine
@@ -24,12 +28,15 @@ typedef struct SpaceInvadersMachine
     double nextInterrupt;
     int whichInterrupt;
 
+    uint8_t in_port;
+    uint8_t out_port;
+
     uint8_t shift0;       // LSB of external shift hardware
     uint8_t shift1;       // MSB of external shift hardware
     uint8_t shift_offset; // offset for external shift hardware
 } SpaceInvadersMachine;
 
-// function to handle input port
+// function to handle input port. this should put the value of the port into register A.
 // to run in attract mode, we need to return 1 from IN 0 and zero from IN 1.
 // external shift is IN 3, OUT 2, OUT 4.
 uint8_t InSpaceInvaders(SpaceInvadersMachine *machine, uint8_t port)
@@ -37,11 +44,14 @@ uint8_t InSpaceInvaders(SpaceInvadersMachine *machine, uint8_t port)
     unsigned char a;
     switch (port)
     {
-    case 0:
-        return 1; // this will change if we handle input later
-    case 1:
-        return 0; // this will change if we handle input later
-    case 3:       // this handles shift register
+    case 0:                   // INPUTS (not used)
+        return 1;             // this will change if we handle input later. this may not do anything
+    case 1:                   // INPUTS
+        a = machine->in_port; // set register A to the value of in_port
+        break;
+    case 2:       // INPUTS
+        return 0; // change this later
+    case 3:       // this handles shift register. the result will be sent to register A.
     {
         uint16_t v = (machine->shift1 << 8) | machine->shift0;
         a = ((v >> (8 - machine->shift_offset)) & 0xff);
@@ -59,9 +69,15 @@ void OutSpaceInvaders(SpaceInvadersMachine *machine, uint8_t port, uint8_t value
     case 2:
         machine->shift_offset = value & 0x7;
         break;
+    case 3: // sound bits
+        break;
     case 4:
         machine->shift0 = machine->shift1;
         machine->shift1 = value;
+        break;
+    case 5: // sound bits
+        break;
+    case 6: // watchdog
         break;
     }
 }
@@ -92,6 +108,7 @@ void doCPU(SpaceInvadersMachine *machine)
     double now = timeusec();
     if (machine->lastTimer == 0.0)
     {
+        // set up initial values for timers
         machine->lastTimer = now;
         machine->nextInterrupt = machine->lastTimer + 16000.0;
         machine->whichInterrupt = 1;
@@ -214,6 +231,73 @@ void *get_framebuffer(State8080 *state)
     return (void *)&state->memory[0x2400];
 }
 
+enum port_1_keys
+{
+    KEY_COIN,
+    KEY_P2_START,
+    KEY_P1_START,
+    NONE,
+    KEY_P1_SHOOT,
+    KEY_P1_LEFT,
+    KEY_P1_RIGHT
+};
+// enum port_2_keys
+// {
+//     NONE,
+//     NONE,
+//     KEY_TILT,
+//     NONE,
+//     KEY_P2_SHOOT,
+//     KEY_P2_LEFT,
+//     KEY_P2_RIGHT,
+//     KEY_COIN_INFO
+// };
+
+// functions to accept key events
+void KeyDown(SpaceInvadersMachine *machine, uint8_t key)
+{
+    switch (key)
+    {
+    case KEY_COIN:               // need to define these
+        machine->in_port |= 0x1; // set to 00000001 (bit 0)
+        break;
+    case KEY_P1_LEFT:
+        machine->in_port |= 0x20; // set to 00100000 (bit 5)
+        break;
+    case KEY_P1_RIGHT:
+        machine->in_port |= 0x40; // set to 01000000 (bit 6)
+        break;
+    case KEY_P1_START:
+        machine->in_port |= 0x2; // set to 00000010 (bit 2)
+        break;
+    case KEY_P1_SHOOT:
+        machine->in_port |= 0x10; // set to 00010000 (bit 4)
+        break;
+    }
+}
+
+void KeyUp(SpaceInvadersMachine *machine, uint8_t key)
+{
+    switch (key)
+    {
+    case KEY_COIN:
+        machine->in_port &= ~0x1;
+        break;
+    case KEY_P1_LEFT:
+        machine->in_port &= ~0x20;
+        break;
+    case KEY_P1_RIGHT:
+        machine->in_port &= ~0x40;
+        break;
+    case KEY_P1_START:
+        machine->in_port &= ~0x2;
+        break;
+    case KEY_P1_SHOOT:
+        machine->in_port &= ~0x10;
+        break;
+    }
+}
+
 // wipe SDL surface
 void WipeSurface(SDL_Surface *surface)
 {
@@ -256,7 +340,11 @@ int main(int argc, char **argv)
 
     // create a machine
     SpaceInvadersMachine machine;
+    // initialize the machine
     machine.state = &cpu_state;
+    machine.lastTimer = 0;  // set the initial timer value - otherwise the game won't start right away.
+    machine.in_port = 0x00; // set initial port values
+    machine.out_port = 0x00;
 
     cpu_state.pc = 0;
     cpu_state.memory = memory;
@@ -296,8 +384,8 @@ int main(int argc, char **argv)
     printf("starting game loop\n");
     while (running) // infinite game loop?
     {
-        // double now = timemsec();
-        // double elapsed = now - lastTimer;
+        double now = timemsec();
+        double elapsed = now - lastTimer;
         //  game loop
         //  1. read input from keyboard.
         //  printf("reading keyboard\n");
@@ -308,9 +396,51 @@ int main(int argc, char **argv)
             {
                 running = 0;
             }
-            if (event.type == SDL_KEYDOWN)
+            if (event.type == SDL_KEYDOWN) // change to switch
             {
-                printf("key was pressed\n");
+                if (event.key.keysym.sym == SDLK_RIGHT)
+                {
+                    KeyDown(&machine, KEY_P1_RIGHT);
+                }
+                if (event.key.keysym.sym == SDLK_LEFT)
+                {
+                    KeyDown(&machine, KEY_P1_LEFT);
+                }
+                if (event.key.keysym.sym == SDLK_c)
+                {
+                    KeyDown(&machine, KEY_COIN);
+                }
+                if (event.key.keysym.sym == SDLK_z)
+                {
+                    KeyDown(&machine, KEY_P1_START);
+                }
+                if (event.key.keysym.sym == SDLK_x)
+                {
+                    KeyDown(&machine, KEY_P1_SHOOT);
+                }
+            }
+            if (event.type == SDL_KEYUP) // change to switch
+            {
+                if (event.key.keysym.sym == SDLK_RIGHT)
+                {
+                    KeyUp(&machine, KEY_P1_RIGHT);
+                }
+                if (event.key.keysym.sym == SDLK_LEFT)
+                {
+                    KeyUp(&machine, KEY_P1_LEFT);
+                }
+                if (event.key.keysym.sym == SDLK_c)
+                {
+                    KeyUp(&machine, KEY_COIN);
+                }
+                if (event.key.keysym.sym == SDLK_z)
+                {
+                    KeyUp(&machine, KEY_P1_START);
+                }
+                if (event.key.keysym.sym == SDLK_x)
+                {
+                    KeyUp(&machine, KEY_P1_SHOOT);
+                }
             }
         }
 
@@ -322,29 +452,29 @@ int main(int argc, char **argv)
         framebuffer = get_framebuffer(&cpu_state);
 
         // 4. draw the screen - should run on a timer for 16ms
-        // if (elapsed > 16)
-        //{
-        // clear the screen first
-        // printf("drawing screen\n");
-        WipeSurface(screen);
-
-        // see https://www.reddit.com/r/EmuDev/comments/uxiux8/having_trouble_writing_the_space_invaders_video/
-        // don't fully understand it yet? also screen is rotated.
-        // seems like it draws but gets stuck on interrupts.
-        for (int y = 0; y < 256; y++)
+        if (elapsed > 16)
         {
-            for (int x = 0; x < 224; x++)
+            // clear the screen first
+            // printf("drawing screen\n");
+            WipeSurface(screen);
+
+            // see https://www.reddit.com/r/EmuDev/comments/uxiux8/having_trouble_writing_the_space_invaders_video/
+            // don't fully understand it yet? also screen is rotated.
+            // seems like it draws but gets stuck on interrupts.
+            for (int y = 0; y < 256; y++)
             {
-                if (framebuffer[x / 8 + y * 256 / 8] & (1 << (x & 7)))
+                for (int x = 0; x < 224; x++)
                 {
-                    SetPixel(screen, x, y, 255, 255, 255);
+                    if (framebuffer[x / 8 + y * 256 / 8] & (1 << (x & 7)))
+                    {
+                        SetPixel(screen, x, y, 255, 255, 255);
+                    }
                 }
             }
-        }
 
-        SDL_UpdateWindowSurface(window);
-        // lastTimer = now;
-        //}
+            SDL_UpdateWindowSurface(window);
+            lastTimer = now;
+        }
     }
 
     SDL_DestroyWindow(window);
