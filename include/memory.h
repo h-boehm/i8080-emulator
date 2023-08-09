@@ -1,6 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef MEMORY_H
+#define MEMORY_H
 
 // 16K buffer (sufficient for Space Invaders)
 #define MEM_SIZE 0x4000
@@ -15,3 +14,5 @@ unsigned char mem_read(int address);
 void mem_write(int address, unsigned char byte);
 void mem_init();
 void print_memory();
+
+#endif /* MEMORY_H */

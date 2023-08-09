@@ -57,10 +57,10 @@ void mem_init()
 
     // load game files (each one is 2048 (or 0x800) bytes)
     // start from RAM address
-    load_file("./invaders/invaders.h", 0x0000);
-    load_file("./invaders/invaders.g", 0x0800);
-    load_file("./invaders/invaders.f", 0x1000);
-    load_file("./invaders/invaders.e", 0x1800);
+    load_file("./roms/invaders.h", 0x0000);
+    load_file("./roms/invaders.g", 0x0800);
+    load_file("./roms/invaders.f", 0x1000);
+    load_file("./roms/invaders.e", 0x1800);
 }
 
 void print_memory()

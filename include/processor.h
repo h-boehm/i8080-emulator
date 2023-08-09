@@ -1,8 +1,8 @@
-#ifndef CPU_H
-#define CPU_H
+#ifndef PROCESSOR_H
+#define PROCESSOR_H
 
-#include <stdint.h>
 #include <inttypes.h>
+#include <stdint.h>
 
 // ref: http://www.emulator101.com/emulator-shell.html
 
@@ -35,12 +35,19 @@ typedef struct State8080
 } State8080;
 
 // quit the program for every opcode with an error
-void UnimplementedInstruction(State8080 *state);
+void unimplemented_instruction(State8080 *state);
 
 // emulate the opcode given the current CPU state
-int Emulate8080Op(State8080 *state);
+int emulate_i8080(State8080 *state);
 
-// parity function
-int Parity(unsigned int value);
+// set flags after arithmetic function on A register
+void arithmetic_flags_A(State8080 *state, int answer);
 
-#endif
+// set flags after logical instruction on A register
+void logic_flags_A(State8080 *state);
+
+int parity(int x, int size);
+
+void redirect_output(uint8_t byte, uint8_t port);
+
+#endif /* PROCESSOR_H */
