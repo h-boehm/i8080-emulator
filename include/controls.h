@@ -14,15 +14,21 @@ typedef struct SpaceInvadersMachine
     int whichInterrupt;
 
     uint8_t in_port;
+    uint8_t in_port_2;
     uint8_t out_port;
 
     uint8_t shift0;       // LSB of external shift hardware
     uint8_t shift1;       // MSB of external shift hardware
     uint8_t shift_offset; // offset for external shift hardware
 
+    uint8_t out_port_3;
+    uint8_t out_port_5;
+    uint8_t prev_out_port_3;
+    uint8_t prev_out_port_5;
+
 } SpaceInvadersMachine;
 
-enum port_1_keys
+enum port_keys
 {
     KEY_COIN,
     KEY_P2_START,
@@ -30,20 +36,13 @@ enum port_1_keys
     NONE,
     KEY_P1_SHOOT,
     KEY_P1_LEFT,
-    KEY_P1_RIGHT
+    KEY_P1_RIGHT,
+    KEY_TILT,
+    KEY_P2_SHOOT,
+    KEY_P2_LEFT,
+    KEY_P2_RIGHT,
+    KEY_COIN_INFO
 };
-
-// enum port_2_keys
-// {
-//     NONE,
-//     NONE,
-//     KEY_TILT,
-//     NONE,
-//     KEY_P2_SHOOT,
-//     KEY_P2_LEFT,
-//     KEY_P2_RIGHT,
-//     KEY_COIN_INFO
-// };
 
 void key_down(SpaceInvadersMachine *machine, uint8_t key);
 void key_up(SpaceInvadersMachine *machine, uint8_t key);
