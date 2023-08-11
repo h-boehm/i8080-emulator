@@ -11,6 +11,7 @@
 #include "memory.h"
 #include "ports.h"
 #include "processor.h"
+#include "sounds.h"
 
 // compilation (on mac)
 // gcc -o main main.c ./modules/memory.c ./utils/disasm.c ./emulator/cpu.c -I/Library/Frameworks/SDL2.framework/Headers -I./glad/include -F/Library/Frameworks -framework SDL2
@@ -32,12 +33,17 @@ int main(int argc, char **argv)
 
     // create a machine
     SpaceInvadersMachine machine;
-    
+
     // initialize the machine
     machine.state = &cpu_state;
     machine.lastTimer = 0;  // set the initial timer value - otherwise the game won't start right away.
     machine.in_port = 0x00; // set initial port values
+    machine.in_port_2 = 0x00;
     machine.out_port = 0x00;
+    machine.out_port_3 = 0;
+    machine.out_port_5 = 0;
+    machine.prev_out_port_3 = 0;
+    machine.prev_out_port_5 = 0;
 
     cpu_state.pc = 0;
     cpu_state.memory = memory;
@@ -61,9 +67,23 @@ int main(int argc, char **argv)
         printf("SDL video system ready\n");
     }
 
+    // initialize sound subsystem
+    if (SDL_Init(SDL_INIT_AUDIO) < 0)
+    {
+        printf("SDL audio could not be initialized\n");
+    }
+    else
+    {
+        printf("SDL audio system ready");
+    }
+
+    // initialize the sounds.
+    init_sounds();
+
     // create a window
     printf("creating SDL window\n");
-    window = SDL_CreateWindow("SDL2 Window", 20, 20, 256, 224, SDL_WINDOW_SHOWN);
+    int scale = 2;
+    window = SDL_CreateWindow("SDL2 Window", 20, 20, 224 * scale, 256 * scale, SDL_WINDOW_SHOWN);
 
     screen = SDL_GetWindowSurface(window);
 
@@ -89,7 +109,8 @@ int main(int argc, char **argv)
             {
                 running = 0;
             }
-            if (event.type == SDL_KEYDOWN) // change to switch
+
+            else if (event.type == SDL_KEYDOWN) // change to switch
             {
                 if (event.key.keysym.sym == SDLK_RIGHT)
                 {
@@ -110,6 +131,30 @@ int main(int argc, char **argv)
                 if (event.key.keysym.sym == SDLK_x)
                 {
                     key_down(&machine, KEY_P1_SHOOT);
+                }
+
+                // player 2
+                if (event.key.keysym.sym == SDLK_a)
+                {
+                    key_down(&machine, KEY_P2_START);
+                }
+                if (event.key.keysym.sym == SDLK_s)
+                {
+                    key_down(&machine, KEY_P2_SHOOT);
+                }
+                if (event.key.keysym.sym == SDLK_RIGHT)
+                {
+                    key_down(&machine, KEY_P2_RIGHT);
+                }
+                if (event.key.keysym.sym == SDLK_LEFT)
+                {
+                    key_down(&machine, KEY_P2_LEFT);
+                }
+
+                // tilt - not sure if this does anything?
+                if (event.key.keysym.sym == SDLK_d)
+                {
+                    key_down(&machine, KEY_TILT);
                 }
             }
             if (event.type == SDL_KEYUP) // change to switch
@@ -134,6 +179,30 @@ int main(int argc, char **argv)
                 {
                     key_up(&machine, KEY_P1_SHOOT);
                 }
+
+                // player 2
+                if (event.key.keysym.sym == SDLK_a)
+                {
+                    key_up(&machine, KEY_P2_START);
+                }
+                if (event.key.keysym.sym == SDLK_s)
+                {
+                    key_up(&machine, KEY_P2_SHOOT);
+                }
+                if (event.key.keysym.sym == SDLK_RIGHT)
+                {
+                    key_up(&machine, KEY_P2_RIGHT);
+                }
+                if (event.key.keysym.sym == SDLK_LEFT)
+                {
+                    key_up(&machine, KEY_P2_LEFT);
+                }
+
+                // tilt - not sure if this does anything?
+                if (event.key.keysym.sym == SDLK_d)
+                {
+                    key_up(&machine, KEY_TILT);
+                }
             }
         }
 
@@ -152,15 +221,46 @@ int main(int argc, char **argv)
             wipe_surface(screen);
 
             // see https://www.reddit.com/r/EmuDev/comments/uxiux8/having_trouble_writing_the_space_invaders_video/
-            // don't fully understand it yet? also screen is rotated.
-            // seems like it draws but gets stuck on interrupts.
-            for (int y = 0; y < 256; y++)
+            // mem location 2400 has pixels (0,255),(0,254),(0,253),(0,252),(0,251),(0,250),(0,249),(0,248)
+            int dx = 0;
+            int dy = 0;
+            for (int i = 0; i < 256 * 28; i++)
             {
-                for (int x = 0; x < 224; x++)
+                // loop through each byte in the frame buffer
+                for (int j = 0; j < 8; j++)
                 {
-                    if (framebuffer[x / 8 + y * 256 / 8] & (1 << (x & 7)))
+                    if (framebuffer[i] & (1 << j))
                     {
-                        set_pixel(screen, x, y, 255, 255, 255);
+                        // set the pixel at dx,dy
+
+                        // this gives a scanline looking effect?
+                        // try to add some color as well based on the y value
+                        for (int k = 0; k < scale; k++)
+                        {
+                            // score display - top of screen - this number will change depending on scale
+                            if (((256 * scale - 1) - dy) < (256 * scale - 1) / 5)
+                            {
+                                set_pixel(screen, dx + k, (256 * scale - 1) - dy, 255, 0, 0);
+                            }
+
+                            // bottom of screen
+                            else if (((256 * scale - 1) - dy) > (9 * (256 * scale - 1) / 10))
+                            {
+                                set_pixel(screen, dx + k, (256 * scale - 1) - dy, 0, 0, 255);
+                            }
+
+                            // white pixel
+                            else
+                            {
+                                set_pixel(screen, dx + k, (256 * scale - 1) - dy, 255, 255, 255);
+                            }
+                        }
+                    }
+                    dy += scale;
+                    if (dy >= 256 * scale)
+                    {
+                        dx += scale;
+                        dy = 0;
                     }
                 }
             }
@@ -170,7 +270,9 @@ int main(int argc, char **argv)
         }
     }
 
+    // close the window
     SDL_DestroyWindow(window);
+
     SDL_Quit();
 
     return 0;

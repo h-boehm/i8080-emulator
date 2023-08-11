@@ -11,19 +11,20 @@ uint8_t input_port(SpaceInvadersMachine *machine, uint8_t port)
     unsigned char a;
     switch (port)
     {
-        case 0:                   // INPUTS (not used)
-            return 1;             // this will change if we handle input later. this may not do anything
-        case 1:                   // INPUTS
-            a = machine->in_port; // set register A to the value of in_port
-            break;
-        case 2:       // INPUTS
-            return 0; // change this later
-        case 3:       // this handles shift register. the result will be sent to register A.
-        {
-            uint16_t v = (machine->shift1 << 8) | machine->shift0;
-            a = ((v >> (8 - machine->shift_offset)) & 0xff);
-            break;
-        }
+    case 0:                   // INPUTS (not used)
+        return 1;             // this will change if we handle input later. this may not do anything
+    case 1:                   // INPUTS
+        a = machine->in_port; // set register A to the value of in_port
+        break;
+    case 2:                     // INPUTS - set register A to value of in_port_2
+        a = machine->in_port_2; // change this later
+        break;
+    case 3: // this handles shift register. the result will be sent to register A.
+    {
+        uint16_t v = (machine->shift1 << 8) | machine->shift0;
+        a = ((v >> (8 - machine->shift_offset)) & 0xff);
+        break;
+    }
     }
     return a;
 }
@@ -37,12 +38,14 @@ void output_port(SpaceInvadersMachine *machine, uint8_t port, uint8_t value)
         machine->shift_offset = value & 0x7;
         break;
     case 3: // sound bits
+        machine->out_port_3 = value;
         break;
     case 4:
         machine->shift0 = machine->shift1;
         machine->shift1 = value;
         break;
     case 5: // sound bits
+        machine->out_port_5 = value;
         break;
     case 6: // watchdog
         break;

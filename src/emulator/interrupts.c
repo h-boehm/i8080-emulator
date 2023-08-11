@@ -3,10 +3,10 @@
 
 #include "ports.h"
 #include "processor.h"
-
+#include "sounds.h"
 
 // function to generate interrupts
-void  generate_interrupt(State8080 *state, int interrupt_num)
+void generate_interrupt(State8080 *state, int interrupt_num)
 {
     // printf("Generating interrupt\n");
     // perform "PUSH PC" - see the example for what this does.
@@ -40,7 +40,6 @@ double time_us()
     timespec_get(&ts, TIME_UTC);
     return ((double)ts.tv_sec * 1e6) + ((double)ts.tv_nsec / 1000.0);
 }
-
 
 double time_ms()
 {
@@ -101,8 +100,8 @@ void run_cpu(SpaceInvadersMachine *machine)
             uint8_t port = op[1];
 
             machine->state->a = input_port(machine, port); // set register A to the value of the port.
-            machine->state->pc += 2;                            // update the program counter
-            cycles += 3;                                        // update cpu cycles
+            machine->state->pc += 2;                       // update the program counter
+            cycles += 3;                                   // update cpu cycles
 
 #ifdef DEBUG
             printf("%x: handling input of %d\n", op[0], port);
@@ -117,8 +116,11 @@ void run_cpu(SpaceInvadersMachine *machine)
             uint8_t port = machine->state->memory[machine->state->pc + 1];
 
             output_port(machine, port, machine->state->a); // set the port to the value of register A.
-            machine->state->pc += 2;                            // update the program counter
-            cycles += 3;                                        // update cpu cycles
+
+            play_sounds(machine);
+
+            machine->state->pc += 2; // update the program counter
+            cycles += 3;             // update cpu cycles
 #ifdef DEBUG
             printf("handling output of %d\n", port);
 #endif
@@ -150,7 +152,7 @@ void run_cpu(SpaceInvadersMachine *machine)
 
             // this should return the number of cycles per instruction.
             // cpu.c should be updated to return the number of cycles
-            cycles +=  emulate_i8080(machine->state);
+            cycles += emulate_i8080(machine->state);
         }
     }
     // update the last timer value
