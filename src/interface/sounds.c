@@ -122,22 +122,22 @@ void play_sounds(SpaceInvadersMachine *machine)
             Mix_PlayChannel(-1, sample[4], 0);
         }
         // invader movement sound 2
-        if ((machine->out_port_5 & 0x2) && !(machine->prev_out_port_5 & 0x1))
+        if ((machine->out_port_5 & 0x2) && !(machine->prev_out_port_5 & 0x2))
         {
             Mix_PlayChannel(-1, sample[5], 0);
         }
         // invader movement sound 3
-        if ((machine->out_port_5 & 0x4) && !(machine->prev_out_port_5 & 0x1))
+        if ((machine->out_port_5 & 0x4) && !(machine->prev_out_port_5 & 0x4))
         {
             Mix_PlayChannel(-1, sample[6], 0);
         }
         // invader movement sound 4
-        if ((machine->out_port_5 & 0x8) && !(machine->prev_out_port_5 & 0x1))
+        if ((machine->out_port_5 & 0x8) && !(machine->prev_out_port_5 & 0x8))
         {
             Mix_PlayChannel(-1, sample[7], 0);
         }
         // ufo hit sound
-        if ((machine->out_port_5 & 0x10) && !(machine->prev_out_port_5 & 0x1))
+        if ((machine->out_port_5 & 0x10) && !(machine->prev_out_port_5 & 0x10))
         {
             Mix_PlayChannel(-1, sample[8], 0);
         }
