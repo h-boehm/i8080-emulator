@@ -26,8 +26,8 @@
 int main(int argc, char **argv)
 {
     // initialize memory buffer and load ROM files into memory
-    mem_init();
-
+    // mem_init();
+    mem_init_dx();
     // set up a State8080 struct
     State8080 cpu_state;
 
@@ -90,9 +90,11 @@ int main(int argc, char **argv)
     // pointer to the framebuffer
     uint8_t *framebuffer;
 
+    // state of the program
     int running = 1;
+
+    // store when the last timer occurred for redrawing the screen
     double lastTimer = 0;
-    // while (cpu_state.pc < sizeof(memory))
 
     printf("starting game loop\n");
     while (running) // infinite game loop?
@@ -101,7 +103,6 @@ int main(int argc, char **argv)
         double elapsed = now - lastTimer;
         //  game loop
         //  1. read input from keyboard.
-        //  printf("reading keyboard\n");
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
@@ -210,14 +211,12 @@ int main(int argc, char **argv)
         run_cpu(&machine);
 
         // 3. get the current frame buffer - pointer to the starting address
-        // printf("getting framebuffer\n");
         framebuffer = get_framebuffer(&cpu_state);
 
         // 4. draw the screen - should run on a timer for 16ms
         if (elapsed > 16)
         {
-            // clear the screen first
-            // printf("drawing screen\n");
+            // clear the screen
             wipe_surface(screen);
 
             // see https://www.reddit.com/r/EmuDev/comments/uxiux8/having_trouble_writing_the_space_invaders_video/
@@ -265,14 +264,14 @@ int main(int argc, char **argv)
                 }
             }
 
+            // update the display and set timer
             SDL_UpdateWindowSurface(window);
             lastTimer = now;
         }
     }
 
-    // close the window
+    // close the window and quit
     SDL_DestroyWindow(window);
-
     SDL_Quit();
 
     return 0;

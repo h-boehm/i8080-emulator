@@ -114,6 +114,7 @@ int disassemble_i8080(unsigned char *codebuffer, int pc)
         break;
     case 0x20:
         printf("NOP");
+        break;
     case 0x21:
         printf("LXI    H, #$%02x%02x", code[2], code[1]);
         opbytes = 3;
@@ -826,6 +827,6 @@ int disassemble_i8080(unsigned char *codebuffer, int pc)
         break;
     }
     printf("\n");
-    
+
     return opbytes;
 }

@@ -101,7 +101,7 @@ int emulate_i8080(State8080 *state)
     }
     case 0x03: // INX B (BC <- BC + 1)
     {
-        int val =  state->b << 8 | state->c;
+        int val = state->b << 8 | state->c;
         val++;
         state->b = (val >> 8) & 0xff; // store higher 8 bits in b
         state->c = val & 0xff;        // store lower 8 bits in c

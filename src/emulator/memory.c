@@ -4,7 +4,8 @@
 #include <memory.h>
 
 // 16K buffer (sufficient for Space Invaders)
-#define MEM_SIZE 0x4000
+// increase mem size for other games
+#define MEM_SIZE 0x4FFF
 
 // global memory buffer
 // instructions/operands are unsigned chars
@@ -63,10 +64,41 @@ void mem_init()
     load_file("./roms/invaders.e", 0x1800);
 }
 
+void mem_init_dx()
+{
+    // initialize memory
+    // clear memory buffer (set all bytes to 0)
+    memset(memory, 0, MEM_SIZE);
+
+    // load game files (each one is 2048 (or 0x800) bytes)
+    // start from RAM address
+    // space invaders deluxe
+    load_file("./roms/invdelux.h", 0x0000);
+    load_file("./roms/invdelux.g", 0x0800);
+    load_file("./roms/invdelux.f", 0x1000);
+    load_file("./roms/invdelux.e", 0x1800);
+    load_file("./roms/invdelux.d", 0x4000);
+
+    // lunar rescue
+    // load_file("./roms/lrescue.1", 0x0000);
+    // load_file("./roms/lrescue.2", 0x0800);
+    // load_file("./roms/lrescue.3", 0x1000);
+    // load_file("./roms/lrescue.4", 0x1800);
+    // load_file("./roms/lrescue.5", 0x4000);
+    // load_file("./roms/lrescue.6", 0x4800);
+
+    // balloon bomber
+    // load_file("./roms/tn01", 0x0000);
+    // load_file("./roms/tn02", 0x0800);
+    // load_file("./roms/tn03", 0x1000);
+    // load_file("./roms/tn04", 0x1800);
+    // load_file("./roms/tn05-1", 0x4000);
+}
+
 void print_memory()
 {
     // starting from RAM
-    for (int i = 0; i < 16383; ++i)
+    for (int i = 0; i < MEM_SIZE; ++i)
     {
         // pad hex values for clearer output
         printf("%02x ", memory[i]);
