@@ -64,6 +64,36 @@ void mem_init()
     load_file("./roms/invaders.e", 0x1800);
 }
 
+void mem_init_balloon()
+{
+    // initialize memory
+    // clear memory buffer (set all bytes to 0)
+    memset(memory, 0, MEM_SIZE);
+
+    // balloon bomber
+    load_file("./roms/tn01", 0x0000);
+    load_file("./roms/tn02", 0x0800);
+    load_file("./roms/tn03", 0x1000);
+    load_file("./roms/tn04", 0x1800);
+    load_file("./roms/tn05-1", 0x4000);
+}
+
+
+void mem_init_lrescue()
+{
+    // initialize memory
+    // clear memory buffer (set all bytes to 0)
+    memset(memory, 0, MEM_SIZE);
+
+    // lunar rescue
+    load_file("./roms/lrescue.1", 0x0000);
+    load_file("./roms/lrescue.2", 0x0800);
+    load_file("./roms/lrescue.3", 0x1000);
+    load_file("./roms/lrescue.4", 0x1800);
+    load_file("./roms/lrescue.5", 0x4000);
+    load_file("./roms/lrescue.6", 0x4800);
+}
+
 void mem_init_dx()
 {
     // initialize memory
@@ -79,20 +109,6 @@ void mem_init_dx()
     load_file("./roms/invdelux.e", 0x1800);
     load_file("./roms/invdelux.d", 0x4000);
 
-    // lunar rescue
-    // load_file("./roms/lrescue.1", 0x0000);
-    // load_file("./roms/lrescue.2", 0x0800);
-    // load_file("./roms/lrescue.3", 0x1000);
-    // load_file("./roms/lrescue.4", 0x1800);
-    // load_file("./roms/lrescue.5", 0x4000);
-    // load_file("./roms/lrescue.6", 0x4800);
-
-    // balloon bomber
-    // load_file("./roms/tn01", 0x0000);
-    // load_file("./roms/tn02", 0x0800);
-    // load_file("./roms/tn03", 0x1000);
-    // load_file("./roms/tn04", 0x1800);
-    // load_file("./roms/tn05-1", 0x4000);
 }
 
 void print_memory()

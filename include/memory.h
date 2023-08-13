@@ -14,6 +14,8 @@ unsigned char mem_read(int address);
 void mem_write(int address, unsigned char byte);
 void mem_init();
 void mem_init_dx();
+void mem_init_lrescue();
+void mem_init_balloon();
 void print_memory();
 
 #endif /* MEMORY_H */

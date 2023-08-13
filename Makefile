@@ -1,7 +1,7 @@
 # Compiler flags
 CC = gcc
 CFLAGS = -Wall -Iinclude $(shell sdl2-config --cflags)
-LDFLAGS = $(shell sdl2-config --libs)
+LDFLAGS = $(shell sdl2-config --libs) -lSDL2_mixer
 
 # Source files
 MAIN_SRCS = $(wildcard src/emulator/*.c src/interface/*.c src/utils/*.c src/main.c)

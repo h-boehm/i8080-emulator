@@ -1,33 +1,134 @@
+#include <SDL2/SDL.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <SDL2/SDL.h>
 
+#include "controls.h"
 #include "disasm.h"
 #include "display.h"
 #include "interrupts.h"
-#include "controls.h"
 #include "memory.h"
 #include "ports.h"
 #include "processor.h"
 #include "sounds.h"
+#include <unistd.h>
 
-// compilation (on mac)
-// gcc -o main main.c ./modules/memory.c ./utils/disasm.c ./emulator/cpu.c -I/Library/Frameworks/SDL2.framework/Headers -I./glad/include -F/Library/Frameworks -framework SDL2
+void printDelay(const char *str) {
+    while (*str) {
+        putchar(*str++);
+        fflush(stdout); // Flush the output buffer to ensure immediate printing
+        usleep(2400);
+    }
+    fseek(stdout, 0, SEEK_END); // Move cursor to end of the line
+}
 
-// if we want to use SDL2, need to have this in there as well (for mac)
-// -I/Library/Frameworks/SDL2.framework/Headers -I./glad/include -F/Library/Frameworks -framework SDL2
-
-// to debug: add the -g flag
-// run using gdb ./main or lldb ./main on Mac
-// then type run
 
 int main(int argc, char **argv)
 {
+    // hide the cursor
+    printf("\e[?25l");
+
+    // title art
+    printDelay("\n");
+    printDelay("         ____________________\n");
+    printDelay("        /  ________________  \\\n");
+    printDelay("       /  / _______________\\  \\\n");
+    printDelay("      /  / /              \\ \\  \\\n");
+    printDelay("     /  / /                \\ \\  \\\n");
+    printDelay("    |  | |      i8080      | |  |\n");
+    printDelay("    |  | |                 | |  |\n");
+    printDelay("    |  | | E M U L A T O R | |  |\n");
+    printDelay("    |  | |                 | |  |\n");
+    printDelay("    |  | |                 | |  |\n");
+    printDelay("    |  | |     welcome!    | |  |\n");
+    printDelay("    |  | |                 | |  |\n");
+    printDelay("    |  | |_________________| |  |\n");
+    printDelay("    |  |  _________________  |  |\n");
+    printDelay("    |  | |                 | |  |\n");
+    printDelay("    |  | |   O             | |  |\n");
+    printDelay("    |  | |   |    [] []    | |  |\n");
+    printDelay("    |  | |                 | |  |\n");
+    printDelay("    |  | |   __   __       | |  |\n");
+    printDelay("    |  | |   ||   ||       | |  |\n");
+    printDelay("    |  | |   --   --       | |  |\n");
+    printDelay("    |  | |                 | |  |\n");
+    printDelay("     \\  \\ \\________________| /  /\n");
+    printDelay("      \\_________________________/\n");
+    printDelay("\n");
+    // game selection
+    printDelay("       _________________________\n");
+    printDelay("      /                         \\\n");
+    printDelay("     |    Game Selection:       |\n");
+    printDelay("     |    1. Space Invaders     |\n");
+    printDelay("     |    2. Space Invaders II  |\n");
+    printDelay("     |    3. Lunar Escape       |\n");
+    printDelay("     |    4. Bubble Bomber      |\n");
+    printDelay("      \\________________________/\n");
+    printDelay("\n");
+
+    int gameSelection;
+    printDelay("     Enter game selection (1-4): ");
+    printf("\e[?25h");
+    printf("\e[?25l");
+    scanf("%d", &gameSelection);
+
+    // screen size selection
+    printDelay("\n");
+    printDelay("       _________________________\n");
+    printDelay("      /                         \\\n");
+    printDelay("     |    Screen size:          |\n");
+    printDelay("     |    1. Small              |\n");
+    printDelay("     |    2. Medium             |\n");
+    printDelay("     |    3. Large              |\n");
+    printDelay("      \\________________________/\n");
+    printDelay("\n");
+    int screenSize;
+    printDelay("     Choose screen size (1-3): ");
+    printf("\e[?25h");
+    printf("\e[?25l");
+    scanf("%d", &screenSize);
+
+    // start option
+    printDelay("\n");
+    char startOption = '\0'; // Initialize to null character
+    do {
+        printDelay("       _________________________\n");
+        printDelay("      /                         \\\n");
+        printDelay("     |    Press 's' to start!   |\n");
+        printDelay("     |                          |\n");
+        printDelay("      \\________________________/\n");
+        printDelay("\n");
+        printDelay("     "); // Added spaces to align the cursor
+        printf("\e[?25h");
+        printf("\e[?25l");
+        scanf(" %c", &startOption);
+        if (startOption != 'S' && startOption != 's') {
+            printDelay("     Invalid selection - please try again!\n");
+        } 
+    } while (startOption != 'S' && startOption != 's');
+
+    printDelay("     Starting game ...\n");
+
     // initialize memory buffer and load ROM files into memory
-    // mem_init();
-    mem_init_dx();
+
+    if (gameSelection == 1)
+    {
+        mem_init();
+    }
+    else if (gameSelection == 2)
+    {
+        mem_init_dx();
+    }
+    else if (gameSelection == 3)
+    {
+        mem_init_lrescue();
+    }
+    else 
+    {
+        mem_init_balloon();
+    }
+
     // set up a State8080 struct
     State8080 cpu_state;
 
@@ -48,9 +149,6 @@ int main(int argc, char **argv)
     cpu_state.pc = 0;
     cpu_state.memory = memory;
 
-    printf("press key to start\n");
-    getchar();
-
     // create SDL window
     SDL_Window *window = NULL;
 
@@ -60,29 +158,29 @@ int main(int argc, char **argv)
     // initialize the video subsystem
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
-        printf("SDL could not be initialized\n");
+        printDelay("     SDL could not be initialized\n");
     }
     else
     {
-        printf("SDL video system ready\n");
+        printDelay("     SDL video system ready\n");
     }
 
     // initialize sound subsystem
     if (SDL_Init(SDL_INIT_AUDIO) < 0)
     {
-        printf("SDL audio could not be initialized\n");
+        printDelay("     SDL audio could not be initialized\n");
     }
     else
     {
-        printf("SDL audio system ready");
+        printDelay("     SDL audio system ready\n");
     }
 
     // initialize the sounds.
     init_sounds();
 
     // create a window
-    printf("creating SDL window\n");
-    int scale = 2;
+    //printDelay("creating SDL window\n");
+    int scale = screenSize;
     window = SDL_CreateWindow("SDL2 Window", 20, 20, 224 * scale, 256 * scale, SDL_WINDOW_SHOWN);
 
     screen = SDL_GetWindowSurface(window);
@@ -96,7 +194,7 @@ int main(int argc, char **argv)
     // store when the last timer occurred for redrawing the screen
     double lastTimer = 0;
 
-    printf("starting game loop\n");
+    //printDelay("starting game loop\n");
     while (running) // infinite game loop?
     {
         double now = time_ms();
