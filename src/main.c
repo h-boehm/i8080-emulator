@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "controls.h"
 #include "disasm.h"
@@ -12,21 +13,20 @@
 #include "ports.h"
 #include "processor.h"
 #include "sounds.h"
-#include <unistd.h>
+
 
 void printDelay(const char *str) {
     while (*str) {
         putchar(*str++);
-        fflush(stdout); // Flush the output buffer to ensure immediate printing
-        usleep(2400);
+        fflush(stdout); // flush for immediate printing
+        usleep(2500);
     }
-    fseek(stdout, 0, SEEK_END); // Move cursor to end of the line
+    fseek(stdout, 0, SEEK_END); // move cursor to end of line
 }
-
 
 int main(int argc, char **argv)
 {
-    // hide the cursor
+    // hide cursor
     printf("\e[?25l");
 
     // title art
@@ -56,6 +56,7 @@ int main(int argc, char **argv)
     printDelay("     \\  \\ \\________________| /  /\n");
     printDelay("      \\_________________________/\n");
     printDelay("\n");
+
     // game selection
     printDelay("       _________________________\n");
     printDelay("      /                         \\\n");
@@ -84,7 +85,7 @@ int main(int argc, char **argv)
     printDelay("      \\________________________/\n");
     printDelay("\n");
     int screenSize;
-    printDelay("     Choose screen size (1-3): ");
+    printDelay("     Enter screen size (1-3): ");
     printf("\e[?25h");
     printf("\e[?25l");
     scanf("%d", &screenSize);
@@ -95,11 +96,19 @@ int main(int argc, char **argv)
     do {
         printDelay("       _________________________\n");
         printDelay("      /                         \\\n");
-        printDelay("     |    Press 's' to start!   |\n");
+        printDelay("     |  Coin: 'C'               |\n");
+        printDelay("     |  Right/Left: Arrow Keys  |\n");
         printDelay("     |                          |\n");
+        printDelay("     |  Player 1 Controls       |\n");
+        printDelay("     |  Z: Start   X: Shoot     |\n");
+        printDelay("     |                          |\n");
+        printDelay("     |  Player 2 Controls:      |\n");
+        printDelay("     |  A: Start   S: Shoot     |\n");
+        printDelay("     |                          |\n");
+        printDelay("     |  Enter 'S' to start!     |\n");
         printDelay("      \\________________________/\n");
         printDelay("\n");
-        printDelay("     "); // Added spaces to align the cursor
+        printDelay("     ");
         printf("\e[?25h");
         printf("\e[?25l");
         scanf(" %c", &startOption);
@@ -162,7 +171,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        printDelay("     SDL video system ready\n");
+        // printDelay("     SDL video system ready\n");
     }
 
     // initialize sound subsystem
@@ -172,7 +181,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        printDelay("     SDL audio system ready\n");
+        // printDelay("     SDL audio system ready\n");
     }
 
     // initialize the sounds.
